@@ -1,0 +1,8 @@
+.env
+venv/
+__pycache__/
+*.pyc
+.chroma/
+memory/logs/
+MEMORY.md
+USER.md
