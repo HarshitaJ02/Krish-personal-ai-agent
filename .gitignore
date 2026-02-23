@@ -6,3 +6,6 @@ __pycache__/
 memory/logs/
 MEMORY.md
 USER.md
+PROGRESS.md
+TOOLS.md
+test_retrieval.py
