@@ -63,12 +63,16 @@ def build_context(user_message:str, scores:dict)->str:
                 pieces.append(memory)
                 used_tokens += memory_tokens
     if (scores["knowledge"] > 0.5 or scores["personal"] > 0.6) and scores["tool"] < 0.7:
-        rag = retrieve_context(user_message, top_k=3)
-        if rag:
-            rag_tokens = count_tokens(rag)
-            if used_tokens + rag_tokens < budget_tokens:
-                pieces.append(f"## Relevant Past Context\n{rag}")
-                used_tokens += rag_tokens
+        try:
+            rag = retrieve_context(user_message, top_k=3)
+            if rag:
+                rag_tokens = count_tokens(rag)
+                if used_tokens + rag_tokens < budget_tokens:
+                    pieces.append(f"## Relevant Past Context\n{rag}")
+                    used_tokens += rag_tokens
+        except Exception as e:
+            print(f"[CONTEXT ERROR] RAG injection failed: {e}")    
+            pass  # RAG failure should never break context building
     
     if scores["personal"] > 0.5:
         remaining_tokens = budget_tokens - used_tokens

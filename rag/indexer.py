@@ -52,24 +52,33 @@ def index_all_logs():
     """Index all messages from daily logs into ChromaDB."""
     log_files = sorted(LOGS_DIR.glob("*.md"))
 
-    all_messages = []
-    for log_file in log_files:
-        messages = parse_log_file(log_file)
-        all_messages.extend(messages)
-
-    if not all_messages:
-        print("No message to index")
+    if not log_files:
+        print("No log files found.")
         return
     
-    ids = [msg["id"] for msg in all_messages]
-    documents = [msg["content"] for msg in all_messages]
+    existing = collection.get(include=[])
+    existing_ids = set(existing["ids"]) if existing["ids"] else set()
+
+    new_messages = []
+    for log_file in log_files:
+        messages = parse_log_file(log_file)
+        for msg in messages:
+            if msg["id"] not in existing_ids:
+                new_messages.append(msg)
+
+    if not new_messages:
+        print(f"ChromaDB up to date ({len(existing_ids)} messages already indexed).")
+        return
+    
+    ids = [msg["id"] for msg in new_messages]
+    documents = [msg["content"] for msg in new_messages]
     metadatas = [
         {
             "date": msg["date"],
             "timestamp": msg["timestamp"],
             "role": msg["role"]
         }
-        for msg in all_messages
+        for msg in new_messages
     ]
 
     embeddings = embedding_model.encode(documents).tolist()
@@ -81,7 +90,8 @@ def index_all_logs():
         metadatas=metadatas
     )
 
-    print(f"Indexed {len(all_messages)} messages into ChromaDB")
+    print(f"Indexed {len(new_messages)} new messages. Total: {len(existing_ids) + len(new_messages)}")
+
 
 if __name__ == "__main__":
     index_all_logs()

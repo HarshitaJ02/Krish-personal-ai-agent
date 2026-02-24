@@ -16,24 +16,28 @@ def retrieve_context(query:str, top_k: int = 5) -> str:
     Returns formatted string with retrieved messages.
     """
 
-    query_embedding = embedding_model.encode(query).tolist()
-
-    results = collection.query(
-        query_embeddings = [query_embedding],
-        n_results = top_k
-    )
-
-    if not results['documents'] or not results['documents'][0]:
-        return "No relevant past context found."
-    
-    formatted = []
-    documents = results['documents'][0]
-    metadatas = results['metadatas'][0]
-
-    for doc, meta in zip(documents, metadatas):
-        formatted.append(
-            f"[{meta['date']} {meta['timestamp']}] {meta['role']}: {doc}"
+    try:
+        if collection.count() == 0:
+            return ""
+        
+        query_embedding = embedding_model.encode(query).tolist()
+        results = collection.query(
+            query_embeddings = [query_embedding],
+            n_results = top_k
         )
 
-    return "\n".join(formatted)
+        if not results['documents'] or not results['documents'][0]:
+            return ""
+        
+        formatted = []
+        documents = results['documents'][0]
+        metadatas = results['metadatas'][0]
 
+        for doc, meta in zip(documents, metadatas):
+            formatted.append(
+                f"[{meta['date']} {meta['timestamp']}] {meta['role']}: {doc}"
+            )
+        return "\n".join(formatted)
+    except Exception as e:
+        print(f"[RAG ERROR] retrieve_context failed: {e}")  # visible in logs
+        return ""

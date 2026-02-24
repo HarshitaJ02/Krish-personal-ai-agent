@@ -2,10 +2,18 @@ from telegram.ext import Application, MessageHandler, filters, CommandHandler
 from bot.handlers import handle_message, handle_start, handle_help, handle_memory, handle_clear
 from scheduler.jobs import scheduler
 import config
+from rag.indexer import index_all_logs
+
 
 application = Application.builder().token(config.TELEGRAM_BOT_TOKEN).build()
 
 async def post_init(application):
+    try:
+        print("Syncing ChromaDB with latest logs...")
+        index_all_logs()
+    except Exception as e:
+        print(f"Indexing failed (non-critical): {e}")
+    
     scheduler.start()
     print("Scheduler started!")
 
