@@ -27,7 +27,7 @@ PERSONAL_PHRASES = [
     "you said", "we talked", "we discussed", "last time", "yesterday", "discussed", "talked about",
     "last week", "remember when", "you mentioned", "i told you",
     "do you remember", "what did we", "earlier you", "before you said",
-    "remind me", "again like you did", "what do you know about me", "who am i", "what are my goals",
+    "again like you did", "what do you know about me", "who am i", "what are my goals",
     "what is my name", "do you know me", "do you know my name",
     "what do you know", "tell me about me", "my background",
     "what have i told you", "what do you remember about me",
@@ -40,10 +40,10 @@ def quick_triage(message: str) -> dict | None:
         return {"casual": 1.0, "tool": 0.0, "personal": 0.0, "knowledge": 0.0}
     if len(msg.split()) <= 2 and "?" not in msg:
         return {"casual": 0.9, "tool": 0.0, "personal": 0.0, "knowledge": 0.1}
-    if any(phrase in msg for phrase in TOOL_EXACT_PHRASES):
-        return {"casual": 0.0, "tool": 1.0, "personal": 0.0, "knowledge": 0.0}
     if any(phrase in msg for phrase in PERSONAL_PHRASES):
         return {"casual": 0.0, "tool": 0.0, "personal": 0.8, "knowledge": 0.5} #hybrid handling
+    if any(phrase in msg for phrase in TOOL_EXACT_PHRASES):
+        return {"casual": 0.0, "tool": 1.0, "personal": 0.0, "knowledge": 0.0}
     
     return None
 
