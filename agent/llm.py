@@ -13,6 +13,8 @@ def get_llm_response(messages: list, tools: list = None, force_tool: bool = Fals
     else:
         model = MODEL_CLASSIFIER if use_classifier_model else MODEL_MAIN
 
+    print(f"[LLM CALL] model={model}, tools={[t['function']['name'] for t in tools] if tools else None}")
+
     kwargs = {
         "model": model,
         "messages": messages,
@@ -33,11 +35,14 @@ def get_llm_response(messages: list, tools: list = None, force_tool: bool = Fals
                 arguments = json.loads(tool_call.function.arguments)
             except Exception:
                 arguments = {}
+            print(f"[LLM] Tool call returned: {tool_call.function.name}")
             return {
                 "type": "tool_call",
                 "name": tool_call.function.name,
                 "arguments": arguments
             }
+        
+        print(f"[LLM] Text returned: {str(message.content or '')[:80]}")
 
         return {
             "type": "text",
@@ -45,6 +50,7 @@ def get_llm_response(messages: list, tools: list = None, force_tool: bool = Fals
         }
 
     except Exception as e:
+        print(f"[LLM EXCEPTION] {str(e)[:200]}")
         error_str = str(e)
         if "failed_generation" in error_str:
             match = re.search(r"failed_generation.*?'(.*?)'}", error_str, re.DOTALL)

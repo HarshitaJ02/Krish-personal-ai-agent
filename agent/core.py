@@ -37,6 +37,8 @@ def _safe_llm_call(messages: list, tools: list = None) -> dict:
 
 async def run_agent(user_message: str, bot=None, chat_id: str = None) -> str:
     global conversation_history
+    
+    print(f"[AGENT] Received: {user_message[:80]}")
 
     store.write_daily_log("user", user_message)
     conversation_history.append({"role": "user", "content": user_message})
@@ -48,12 +50,21 @@ async def run_agent(user_message: str, bot=None, chat_id: str = None) -> str:
     tools_used = []
 
     scores = classify_message(user_message)
+    print(f"[CLASSIFIER] scores={scores}")
+
     system_msg = build_system_message(user_message, scores)
     messages = [{"role": "system", "content": system_msg}] + conversation_history
 
     if should_use_tools(scores):
         relevant_tools = filter_tools(user_message, scores)
+
+        tool_names = [t["function"]["name"] for t in relevant_tools]
+        print(f"[TOOLS] Using tools: {tool_names}")
+
         response = _safe_llm_call(messages, tools=relevant_tools)
+
+        print(f"[LLM] Initial response type: {response['type']}, name: {response.get('name')}, content: {str(response.get('content', ''))[:80]}")
+
         iterations = 0
 
         while iterations < config.MAX_TOOL_ITERATIONS:
@@ -70,15 +81,20 @@ async def run_agent(user_message: str, bot=None, chat_id: str = None) -> str:
 
             # LLM has a final answer — done
             if response["type"] != "tool_call":
+                print(f"[AGENT] No tool call, breaking loop")
                 break
 
             tool_name = response["name"]
             tool_args = response["arguments"]
             tools_used.append(tool_name)
+            print(f"[TOOL EXEC] Calling {tool_name} with args: {tool_args}")
+
 
             # Execute tool
             try:
                 tool_result = await execute_tool(tool_name, tool_args, bot=bot, chat_id=chat_id)
+                print(f"[TOOL RESULT] {tool_name}: {str(tool_result)[:200]}")
+
             except Exception as e:
                 print(f"[TOOL ERROR] {tool_name} failed: {e}")
                 tool_result = f"Tool {tool_name} failed: {e}"
@@ -97,8 +113,10 @@ async def run_agent(user_message: str, bot=None, chat_id: str = None) -> str:
             # Tool succeeded — get final response without tools
             # Tool failed — retry with tools so LLM can try differently
             tool_succeeded = not any(word in tool_result.lower() for word in ERROR_WORDS)
+            print(f"[TOOL] succeeded={tool_succeeded}")
             if tool_succeeded:
                 response = _safe_llm_call(messages)
+                print(f"[LLM] Post-tool response: {str(response.get('content', ''))[:80]}")
                 break
             else:
                 response = _safe_llm_call(messages, tools=relevant_tools)
@@ -108,9 +126,12 @@ async def run_agent(user_message: str, bot=None, chat_id: str = None) -> str:
         final_response = response.get("content") or "I wasn't able to complete that."
 
     else:
+        print(f"[AGENT] No tools needed, direct LLM call")
         response = _safe_llm_call(messages)
         final_response = response.get("content") or "I wasn't able to complete that."
 
+    print(f"[AGENT] Final response: {final_response[:80]}")
+    
     conversation_history.append({"role": "assistant", "content": final_response})
     store.write_daily_log("assistant", final_response)
 
