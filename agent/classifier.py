@@ -27,7 +27,10 @@ PERSONAL_PHRASES = [
     "you said", "we talked", "we discussed", "last time", "yesterday", "discussed", "talked about",
     "last week", "remember when", "you mentioned", "i told you",
     "do you remember", "what did we", "earlier you", "before you said",
-    "remind me", "again like you did",
+    "remind me", "again like you did", "what do you know about me", "who am i", "what are my goals",
+    "what is my name", "do you know me", "do you know my name",
+    "what do you know", "tell me about me", "my background",
+    "what have i told you", "what do you remember about me",
 ]
 
 def quick_triage(message: str) -> dict | None:
