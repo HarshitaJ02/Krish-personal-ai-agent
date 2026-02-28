@@ -53,17 +53,15 @@ def get_llm_response(messages: list, tools: list = None, force_tool: bool = Fals
         print(f"[LLM EXCEPTION] {str(e)}")
         error_str = str(e)
         if "failed_generation" in error_str:
-            match = re.search(r"failed_generation.*?'(.*?)'}", error_str, re.DOTALL)
-            if match:
-                failed = match.group(1)
-                xml_match = re.search(r'<function=(\w+)>(.*?)(?:</function>|<function>|$)', failed, re.DOTALL)
-                if xml_match:
-                    tool_name = xml_match.group(1)
-                    try:
-                        arguments = json.loads(xml_match.group(2).strip())
-                        return {"type": "tool_call", "name": tool_name, "arguments": arguments}
-                    except json.JSONDecodeError:
-                        pass
+            xml_match = re.search(r'<function=(\w+).*?(\{.*?\})', error_str, re.DOTALL)
+            if xml_match:
+                tool_name = xml_match.group(1)
+                try:
+                    arguments = json.loads(xml_match.group(2))
+                    print(f"[LLM] XML fallback recovered: {tool_name} with {arguments}")
+                    return {"type": "tool_call", "name": tool_name, "arguments": arguments}
+                except json.JSONDecodeError as je:
+                    print(f"[LLM] XML fallback JSON parse failed: {je}")
         return {"type": "text", "content": "Something went wrong."}
     
 # def get_llm_response(messages:list, tools: list = None, force_tool:bool= False, use_classifier_model: bool = False) ->dict:
