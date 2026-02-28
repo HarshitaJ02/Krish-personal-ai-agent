@@ -50,7 +50,7 @@ def get_llm_response(messages: list, tools: list = None, force_tool: bool = Fals
         }
 
     except Exception as e:
-        print(f"[LLM EXCEPTION] {str(e)[:200]}")
+        print(f"[LLM EXCEPTION] {str(e)}")
         error_str = str(e)
         if "failed_generation" in error_str:
             match = re.search(r"failed_generation.*?'(.*?)'}", error_str, re.DOTALL)
